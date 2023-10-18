@@ -62,7 +62,7 @@ class RequestToItemMapper
             };
         }
 
-        $variants = new Variants();
+        $variants = new Variants($requestContext);
 
         // TODO Refactor to new method
         foreach (new DirectoryIterator($absolutePath) as $fileInfo) {

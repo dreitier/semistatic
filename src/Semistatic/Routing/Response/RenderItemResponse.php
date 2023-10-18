@@ -14,6 +14,12 @@ class RenderItemResponse implements Responsable
 
     public function respond(Context $context): mixed
     {
-        return $this->item->variants->select()->content->render($this->item);
+        return $this
+            ->item
+            ->variants
+            ->select()
+            ->sortPreferred()
+            ->firstOrNull()
+            ->content->render($this->item);
     }
 }

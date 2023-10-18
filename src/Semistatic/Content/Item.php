@@ -42,7 +42,7 @@ class Item
     public function slug(?Selector $variantSelector = null): string
     {
         /** @var Variant $variant */
-        if ($variant = $this->variants->select($variantSelector)) {
+        if ($variant = $this->variants->selectFirstOrNull($variantSelector)) {
             if (sizeof($variant->meta->slugs()) > 0) {
                 return $variant->meta->slugs[0];
             }
@@ -53,22 +53,26 @@ class Item
 
     public function matches(Selector $selector): bool
     {
-        return $this->variants->select($selector) != null;
+        return !$this->variants->select($selector)->isEmpty();
+    }
+
+    public function firstVariantOrNull(?Selector $selector): ?Variant {
+        return $this->variants->sortPreferred()->selectFirstOrNull($selector);
     }
 
     public function meta(string $pathInArray, mixed $default = null, ?string $type = 'string', ?Selector $variantSelector = null): MetaValue
     {
-        return $this->variants->select($variantSelector)?->meta->valueOf($pathInArray, $default, $type);
+        return $this->firstVariantOrNull($variantSelector)?->meta->valueOf($pathInArray, $default, $type);
     }
 
     public function content(?Selector $variantSelector = null): string
     {
-        return $this->variants->select($variantSelector)?->content->render($this) ?? '';
+        return $this->firstVariantOrNull($variantSelector)?->content->render($this) ?? '';
     }
 
     public function variantInfo(?Selector $variantSelector = null): ?VariantFileInfo
     {
-        return $this->variants->select($variantSelector)?->info;
+        return $this->firstVariantOrNull($variantSelector)?->info;
     }
 
     public function url(bool $absolute = false, ?Selector $variantSelector = null): string

@@ -18,6 +18,10 @@ class PathInfoParser
         'en'
     ];
 
+    public function __construct(public readonly string $defaultLanguage = 'en')
+    {
+    }
+
     private ?string $regexPrecompiled = null;
 
     public function fromFilename(SplFileInfo $fileInfo): ItemDirectoryInfo|VariantFileInfo|null
@@ -39,7 +43,7 @@ class PathInfoParser
                 absolutePath: $fileInfo->getRealPath(),
                 flavor: $matches['slug_or_variant_type'],
                 extension: $matches['extension'] ?? '',
-                language: $matches['language'] ?? '',
+                language: !empty($matches['language']) ? $matches['language'] : $this->defaultLanguage,
             );
         }
 
