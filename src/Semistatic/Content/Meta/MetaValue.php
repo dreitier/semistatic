@@ -13,6 +13,10 @@ class MetaValue
         $this->converted = $raw;
     }
 
+    public function converted(): mixed {
+        return $this->converted;
+    }
+
     public function isPresent(): bool
     {
         return $this->converted !== null;

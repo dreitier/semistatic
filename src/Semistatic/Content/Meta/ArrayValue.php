@@ -5,7 +5,7 @@ namespace Dreitier\Semistatic\Content\Meta;
 
 class ArrayValue extends MetaValue
 {
-    public function __toString(): string
+    public function converted(): array
     {
         $use = [];
 
@@ -14,6 +14,14 @@ class ArrayValue extends MetaValue
         } elseif (is_string($this->converted)) {
             $use = [$this->converted];
         }
+
+        return $use;
+
+    }
+
+    public function __toString(): string
+    {
+        $use = $this->converted();
 
         return implode(", ", $use);;
     }
