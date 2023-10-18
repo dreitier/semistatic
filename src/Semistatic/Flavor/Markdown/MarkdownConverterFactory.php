@@ -13,7 +13,10 @@ use League\CommonMark\MarkdownConverter;
 
 class MarkdownConverterFactory
 {
-    public function __construct(public mixed $environmentCustomizer = null)
+    public function __construct(
+        public mixed $environmentCustomizer = null,
+        public readonly array $config = [],
+    )
     {
     }
 
@@ -35,7 +38,7 @@ class MarkdownConverterFactory
 
     public function create(?Environment $environment = null): MarkdownConverter
     {
-        $environment = $environment ?? $this->createDefaultEnvironment();
+        $environment = $environment ?? $this->createDefaultEnvironment($this->config);
 
         $converter = new MarkdownConverter($environment);
         return $converter;
