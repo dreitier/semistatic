@@ -38,10 +38,16 @@ class Variants
         return $this->isEmpty() ? null : $this->variants[0];
     }
 
+    public function size(): int
+    {
+        return sizeof($this->variants);
+    }
+
     public function sortPreferred(): Variants
     {
         $variantsGrouped = [[], []];
         $variants = $this->variants;
+
         if (!empty($this->requestContext->selectedLanguage)) {
             $variants = [];
 
@@ -63,14 +69,16 @@ class Variants
         return $this->newFrom($variants);
     }
 
-    private function newFrom(array $variants): Variants {
+    private function newFrom(array $variants): Variants
+    {
         $r = new static($this->requestContext);
         $r->variants = $variants;
 
         return $r;
     }
 
-    public function selectFirstOrNull(?Selector $selector): ?Variant {
+    public function selectFirstOrNull(?Selector $selector): ?Variant
+    {
         if (!$selector) {
             $selector = new Selector();
         }
@@ -97,15 +105,13 @@ class Variants
             /** @var Variant $variant */
             $variant = $data;
 
-            $match = false;
-
             /*
             if ($selector->primary === true) {
                 $match = true;
             }
             */
 
-            $match = $selector->matches($variant, $match);
+            $match = $selector->matches($variant);
 
             if ($match) {
                 $matches[] = $variant;

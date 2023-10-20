@@ -41,7 +41,7 @@ class SemistaticRouter implements SemistaticRouterInterface
             }
 
             // some attachment inside a node/directory
-            if ($slugsLeft->isLast() && !$trail->isLast()) {
+            if (!$trail->isLast()) {
                 if ($sendFile = SendFileResponse::mayProcess($trail->current(), $slugsLeft->joinCurrentToEnd('/'))) {
                     return $sendFile;
                 }

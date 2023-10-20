@@ -73,7 +73,7 @@ class Items implements IteratorAggregate
 
     public function filter(?string $flavor): Items
     {
-        $selector = new Selector(flavor: $flavor, mode: SelectorMode::OR);
+        $selector = new Selector(flavor: $flavor);
 
         $items = array_filter($this->items, fn(Item $a) => $a->matches($selector));
 

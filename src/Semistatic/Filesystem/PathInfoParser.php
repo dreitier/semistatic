@@ -27,7 +27,7 @@ class PathInfoParser
     public function fromFilename(SplFileInfo $fileInfo): ItemDirectoryInfo|VariantFileInfo|null
     {
         if (!$this->regexPrecompiled) {
-            $this->regexPrecompiled = '/((?<order>\d+)\.)?(?<slug_or_variant_type>[\-|\w]*)(\.(?<language>(' . implode('|', $this->languages) . ')))?(\.(?<extension>(' . implode('|', $this->extensions) . ')))?/';
+            $this->regexPrecompiled = '/^((?<order>\d+)\.)?(?<slug_or_variant_type>[\-|\w]*)(\.(?<language>(' . implode('|', $this->languages) . ')))?(\.(?<extension>(' . implode('|', $this->extensions) . ')))?$/';
         }
 
         if (preg_match($this->regexPrecompiled, $fileInfo->getFilename(), $matches)) {

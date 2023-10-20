@@ -43,8 +43,8 @@ class Item
     {
         /** @var Variant $variant */
         if ($variant = $this->variants->selectFirstOrNull($variantSelector)) {
-            if (sizeof($variant->meta->slugs()) > 0) {
-                return $variant->meta->slugs[0];
+            if (sizeof($slugs = $variant->meta->slugs()) > 0) {
+                return $slugs[0];
             }
         }
 
@@ -78,7 +78,7 @@ class Item
     public function url(bool $absolute = false, ?Selector $variantSelector = null): string
     {
         if ($this->requestContext) {
-            return ($this->requestContext->urlGenerator)($this->trail(), $this->requestContext);
+            return ($this->requestContext->urlGenerator)($this->trail(), $this->requestContext, $variantSelector);
         }
 
         return $this->slug($variantSelector);
@@ -121,7 +121,7 @@ class Item
             $slugs = [$this->info->slug];
 
             foreach ($this->variants->each() as $variant) {
-                $slugs[] = $variant->meta->slugs();
+                $slugs = array_merge($slugs, $variant->meta->slugs());
             }
 
             $this->slugs = $slugs;

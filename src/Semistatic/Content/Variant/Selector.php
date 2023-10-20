@@ -34,6 +34,10 @@ class Selector
         );
     }
 
+    public static function byLanguage(string $language): Selector {
+        return new static(language: $language);
+    }
+
     public static function any(): Selector
     {
         return new static(mode: SelectorMode::OR);
@@ -52,12 +56,14 @@ class Selector
         return !empty($this->flavor) || !empty($this->language) || !empty($this->extension) || !empty($this->primary);
     }
 
-    public function matches(Variant $variant, bool $previousMatches = false): bool
+    public function matches(Variant $variant, ?bool $previousMatches = null): bool
     {
-        $previousMatches = false;
-
         if (!$this->hasSelectors()) {
             return true;
+        }
+
+        if (null === $previousMatches) {
+            $previousMatches = true;
         }
 
         if ($this->language !== null) {
@@ -71,7 +77,6 @@ class Selector
         if ($this->flavor !== null) {
             $previousMatches = $this->combine($previousMatches, (bool)preg_match('/' . $this->flavor . '/', $variant->info->flavor));
         }
-
 
         return $previousMatches;
     }
