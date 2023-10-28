@@ -15,6 +15,7 @@ use Dreitier\Semistatic\Filesystem\ItemDirectoryInfo;
 use Dreitier\Semistatic\Filesystem\VariantFileInfo;
 use Dreitier\Semistatic\Navigation\Trail;
 use Dreitier\Semistatic\Routing\RequestContext;
+use Dreitier\Semistatic\SemistaticException;
 
 class Item
 {
@@ -39,6 +40,26 @@ class Item
         return $this->meta('date', null, MetaValueFactory::DATE, $variantSelector);
     }
 
+    public function flavor(): string
+    {
+        $flavors = [];
+
+        /** @var Variant $variant */
+        foreach ($this->variants as $variant) {
+            $flavor = $variant->info->flavor;
+
+            if (!in_array($flavor, $flavors)) {
+                $flavors[] = $flavor;
+            }
+        }
+
+        if (sizeof($flavors) != 1) {
+            throw new SemistaticException("Flavor of item " . $this . " must be exactly one but is [" . implode(",", $flavors) . "]");
+        }
+
+        return $flavors[0];
+    }
+
     public function slug(?Selector $variantSelector = null): string
     {
         /** @var Variant $variant */
@@ -56,7 +77,8 @@ class Item
         return !$this->variants->select($selector)->isEmpty();
     }
 
-    public function firstVariantOrNull(?Selector $selector): ?Variant {
+    public function firstVariantOrNull(?Selector $selector): ?Variant
+    {
         return $this->variants->sortPreferred()->selectFirstOrNull($selector);
     }
 
@@ -147,5 +169,10 @@ class Item
         }
 
         return $r;
+    }
+
+    public function __toString(): string
+    {
+        return "Item={absolutePath='" . $this->info->absolutePath . "'}";
     }
 }

@@ -14,26 +14,34 @@ use Dreitier\Semistatic\Routing\Response\RenderItemResponse;
 use Dreitier\Semistatic\Routing\Response\Responsable;
 use Dreitier\Semistatic\Routing\Response\SendFileResponse;
 use Dreitier\Semistatic\SemistaticException;
-use Dreitier\Semistatic\Shelf;
 
 class SemistaticRouter implements SemistaticRouterInterface
 {
-    public function __construct(public readonly Shelf $shelf, public readonly RequestToItemMapper $itemMapper)
+    public function __construct(
+        public readonly string                          $rootDirectory,
+        public readonly Item\RequestToItemMapperFactory $itemMapperFactory)
     {
+    }
+
+    public function render(RequestContext $requestContext): mixed
+    {
+        return $this->route($requestContext)->respond();
     }
 
     public function route(RequestContext $requestContext): Responsable
     {
         // based upon the current URI and mountpoint, split each slug
-        $slugsLeft = array_filter(explode('/', $requestContext->uriRelativeToShelfRoot));
-        array_unshift($slugsLeft, '');
+        $uriSegmentsLeft = array_filter(explode('/', $requestContext->uriRelativeToShelfRoot));
+        array_unshift($uriSegmentsLeft, '');
 
-        $slugsLeft = Segments::of($slugsLeft)->moveToBegin();
+        $uriSegmentsLeft = Segments::of($uriSegmentsLeft)->moveToBegin();
+
+        $requestToIteMapper = $this->itemMapperFactory->create($requestContext);
 
         try {
-            $trail = (new PathSegments($this->absoluteShelfPath(), $slugsLeft->capacity()))
+            $trail = (new PathSegments($this->absoluteShelfPath(), $uriSegmentsLeft->capacity()))
                 ->moveToBegin();
-            $item = $this->resolveItemHierarchy($requestContext, $trail, $slugsLeft);
+            $item = $this->resolveItemHierarchy($requestToIteMapper, $trail, $uriSegmentsLeft);
 
             // node/directory item
             if ($item) {
@@ -42,7 +50,7 @@ class SemistaticRouter implements SemistaticRouterInterface
 
             // some attachment inside a node/directory
             if (!$trail->isLast()) {
-                if ($sendFile = SendFileResponse::mayProcess($trail->current(), $slugsLeft->joinCurrentToEnd('/'))) {
+                if ($sendFile = SendFileResponse::mayProcess($trail->current(), $uriSegmentsLeft->joinCurrentToEnd('/'))) {
                     return $sendFile;
                 }
             }
@@ -55,28 +63,27 @@ class SemistaticRouter implements SemistaticRouterInterface
 
     public function absoluteShelfPath(): string
     {
-        return base_path($this->shelf->rootDirectory);
+        return base_path($this->rootDirectory);
     }
 
     /**
      * Find recursively each item from left (root) to right (leaf)
      *
-     * @param RequestContext $requestContext
+     * @param RequestToItemMapper $requestToItemMapper
      * @param PathSegments $itemsInPath
      * @param Segments $slugs
      * @return Item|null
      * @throws SemistaticException
      */
-    private function resolveItemHierarchy(RequestContext $requestContext, PathSegments $itemsInPath, Segments $slugs): ?Item
+    private function resolveItemHierarchy(RequestToItemMapper $requestToItemMapper, PathSegments $itemsInPath, Segments $slugs): ?Item
     {
         $absolutePath = $itemsInPath->absolutePath();
 
         if (!file_exists($absolutePath)) {
-            throw new SemistaticException("Path " . $itemsInPath->join($itemsInPath->beginToCurrent()) ."does not exist");
+            throw new SemistaticException("Path " . $itemsInPath->join($itemsInPath->beginToCurrent()) . " does not exist");
         }
 
-        $item = $this->itemMapper->map(
-            $requestContext,
+        $item = $requestToItemMapper->map(
             $itemsInPath,
         );
 
@@ -92,7 +99,7 @@ class SemistaticRouter implements SemistaticRouterInterface
             if ($child->hasSlug($nextSlug)) {
                 $itemsInPath->push($child);
 
-                return $this->resolveItemHierarchy($requestContext,
+                return $this->resolveItemHierarchy($requestToItemMapper,
                     $itemsInPath,
                     $slugs
                 );

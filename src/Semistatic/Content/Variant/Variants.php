@@ -5,9 +5,12 @@ namespace Dreitier\Semistatic\Content\Variant;
 
 use Dreitier\Semistatic\Content\Variant;
 use Dreitier\Semistatic\Routing\RequestContext;
+use Exception;
 use Generator;
+use JetBrains\PhpStorm\Internal\TentativeType;
+use Traversable;
 
-class Variants
+class Variants implements \IteratorAggregate
 {
     public function __construct(public readonly RequestContext $requestContext)
     {
@@ -123,5 +126,10 @@ class Variants
         }
 
         return $this->newFrom($matches);
+    }
+
+    public function getIterator(): Traversable
+    {
+        return new \ArrayIterator($this->variants);
     }
 }

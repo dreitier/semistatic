@@ -4,8 +4,6 @@ declare(strict_types=1);
 namespace Dreitier\Semistatic\Routing\Response;
 
 use Dreitier\Semistatic\Content\Item;
-use Dreitier\Semistatic\Routing\Context;
-use Dreitier\Semistatic\Routing\Response\Responsable;
 use Illuminate\Support\Facades\File;
 
 class SendFileResponse implements Responsable
@@ -26,7 +24,7 @@ class SendFileResponse implements Responsable
         return null;
     }
 
-    public function respond(Context $context): mixed
+    public function respond(): mixed
     {
         $absolutePath = $this->item->info->absolutePath . '/' . $this->fileInItem;
 

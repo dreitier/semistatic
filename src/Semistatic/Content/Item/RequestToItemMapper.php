@@ -17,54 +17,27 @@ use SplFileInfo;
 
 class RequestToItemMapper
 {
-    private array $variantFactories = [];
-    private PathInfoParser $pathInfoParser;
-
-    public function add(VariantFactory $variantFactory, ?PathInfoParser $pathInfoParser = null)
+    public function __construct(
+        public array          $variantFactories,
+        public PathInfoParser $pathInfoParser,
+        public RequestContext $requestContext,
+    )
     {
-        $this->variantFactories[] = $variantFactory;
-        $this->pathInfoParser = $pathInfoParser ?? new PathInfoParser();
     }
 
-    public function map(RequestContext $requestContext, PathSegments $itemSegments): ?Item
+    public function createInfoFromPath(string $absolutePath): ItemDirectoryInfo|VariantFileInfo|null
     {
-        $absolutePath = $itemSegments->absolutePath();
-
         if (!file_exists($absolutePath)) {
             return null;
         }
 
-        if (!$itemInfo = $this->pathInfoParser->fromFilename(new SplFileInfo($absolutePath))) {
-            return null;
-        }
+        return $this->pathInfoParser->fromFilename(new SplFileInfo($absolutePath));
+    }
 
-        $childrenResolver = null;
+    public function createVariantsFromPath(string $absolutePath): Variants
+    {
+        $variants = new Variants($this->requestContext);
 
-        if (is_dir($absolutePath)) {
-            // TODO Refactor to new method
-            $childrenResolver = function () use ($requestContext, $absolutePath, $itemSegments) {
-                $r = Items::create();
-
-                foreach (new DirectoryIterator($absolutePath) as $fileInfo) {
-                    if ($fileInfo->isDot()) {
-                        continue;
-                    }
-
-                    $variantOrItemInfo = $this->pathInfoParser->fromFilename($fileInfo);
-
-                    if ($variantOrItemInfo instanceof ItemDirectoryInfo) {
-                        $nextPathSegment = $itemSegments->expand($fileInfo->getFilename())->moveToEnd();
-                        $r->add($this->map($requestContext, $nextPathSegment));
-                    }
-                }
-
-                return $r;
-            };
-        }
-
-        $variants = new Variants($requestContext);
-
-        // TODO Refactor to new method
         foreach (new DirectoryIterator($absolutePath) as $fileInfo) {
             $variant = null;
 
@@ -87,6 +60,43 @@ class RequestToItemMapper
             $variants->add($variant);
         }
 
+        return $variants;
+    }
+
+    public function map(PathSegments $itemSegments): ?Item
+    {
+        $absolutePath = $itemSegments->absolutePath();
+
+        if (!$itemInfo = $this->createInfoFromPath($absolutePath)) {
+            return null;
+        }
+
+        $childrenResolver = null;
+
+        if (is_dir($absolutePath)) {
+            // TODO Refactor to new method
+            $childrenResolver = function () use ($absolutePath, $itemSegments) {
+                $r = Items::create();
+
+                foreach (new DirectoryIterator($absolutePath) as $fileInfo) {
+                    if ($fileInfo->isDot()) {
+                        continue;
+                    }
+
+                    $variantOrItemInfo = $this->pathInfoParser->fromFilename($fileInfo);
+
+                    if ($variantOrItemInfo instanceof ItemDirectoryInfo) {
+                        $nextPathSegment = $itemSegments->expand($fileInfo->getFilename())->moveToEnd();
+                        $r->add($this->map($nextPathSegment));
+                    }
+                }
+
+                return $r;
+            };
+        }
+
+        $variants = $this->createVariantsFromPath($absolutePath);
+
         if ($variants->isEmpty()) {
             // no available content
             return null;
@@ -98,7 +108,7 @@ class RequestToItemMapper
         if (!$itemSegments->isBegin()) {
             /** @var PathSegments $parentSegment */
             $parentSegment = $itemSegments->shrink();
-            $parentResolver = fn() => $this->map($requestContext, $parentSegment);
+            $parentResolver = fn() => $this->map($parentSegment);
         }
 
         return new Item($itemInfo,
@@ -107,7 +117,7 @@ class RequestToItemMapper
                 childrenResolver: $childrenResolver
             ),
             $variants,
-            $requestContext
+            $this->requestContext
         );
     }
 }

@@ -12,7 +12,7 @@ class RenderItemResponse implements Responsable
     {
     }
 
-    public function respond(Context $context): mixed
+    public function respond(): mixed
     {
         return $this
             ->item
