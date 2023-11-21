@@ -12,7 +12,7 @@ class NotFoundResponse implements Responsable
     {
     }
 
-    public function respond(Context $context): mixed
+    public function respond(): mixed
     {
         return abort(404);
     }
