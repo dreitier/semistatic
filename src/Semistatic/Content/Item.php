@@ -87,6 +87,15 @@ class Item
         return $this->firstVariantOrNull($variantSelector)?->meta->valueOf($pathInArray, $default, $type);
     }
 
+    public function __get(string $property): mixed
+    {
+        if (!property_exists($this, $property)) {
+            return $this->meta($property);
+        }
+
+        return $this->$property;
+    }
+
     public function content(?Selector $variantSelector = null): string
     {
         return $this->firstVariantOrNull($variantSelector)?->content->render($this) ?? '';
