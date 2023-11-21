@@ -8,6 +8,7 @@ use Dreitier\Semistatic\Content\Item\RequestToItemMapper;
 use Dreitier\Semistatic\Navigation\PathSegments;
 use Dreitier\Semistatic\Navigation\Segments;
 use Dreitier\Semistatic\Navigation\Trail;
+use Dreitier\Semistatic\Routing\Response\ItemLookupResponse;
 use Dreitier\Semistatic\Routing\Response\NotFoundResponse;
 use Dreitier\Semistatic\Filesystem\Path;
 use Dreitier\Semistatic\Routing\Response\RenderItemResponse;
@@ -23,12 +24,14 @@ class SemistaticRouter implements SemistaticRouterInterface
     {
     }
 
-    public function render(RequestContext $requestContext): mixed
-    {
-        return $this->route($requestContext)->respond();
-    }
-
-    public function route(RequestContext $requestContext): Responsable
+    /**
+     * Find the given item
+     *
+     * @param RequestContext $requestContext
+     * @return ItemLookupResponse
+     * @throws SemistaticException
+     */
+    public function lookup(RequestContext $requestContext): ItemLookupResponse
     {
         // based upon the current URI and mountpoint, split each slug
         $uriSegmentsLeft = array_filter(explode('/', $requestContext->uriRelativeToShelfRoot));
@@ -38,10 +41,24 @@ class SemistaticRouter implements SemistaticRouterInterface
 
         $requestToIteMapper = $this->itemMapperFactory->create($requestContext);
 
+        $trail = (new PathSegments($this->absoluteShelfPath(), $uriSegmentsLeft->capacity()))
+            ->moveToBegin();
+        $item = $this->resolveItemHierarchy($requestToIteMapper, $trail, $uriSegmentsLeft);
+
+        return new ItemLookupResponse($item, $uriSegmentsLeft, $trail);
+    }
+
+    public function render(RequestContext $requestContext): mixed
+    {
+        return $this->route($requestContext)->respond();
+    }
+
+    public function route(RequestContext $requestContext): Responsable
+    {
         try {
-            $trail = (new PathSegments($this->absoluteShelfPath(), $uriSegmentsLeft->capacity()))
-                ->moveToBegin();
-            $item = $this->resolveItemHierarchy($requestToIteMapper, $trail, $uriSegmentsLeft);
+            $itemLookupResponse = $this->lookup($requestContext);
+            $item = $itemLookupResponse->item;
+            $trail = $itemLookupResponse->trail;
 
             // node/directory item
             if ($item) {
@@ -50,7 +67,7 @@ class SemistaticRouter implements SemistaticRouterInterface
 
             // some attachment inside a node/directory
             if (!$trail->isLast()) {
-                if ($sendFile = SendFileResponse::mayProcess($trail->current(), $uriSegmentsLeft->joinCurrentToEnd('/'))) {
+                if ($sendFile = SendFileResponse::mayProcess($trail->current(), $itemLookupResponse->uriSegmentsLeft->joinCurrentToEnd('/'))) {
                     return $sendFile;
                 }
             }
