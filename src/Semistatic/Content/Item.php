@@ -115,6 +115,11 @@ class Item
         return $this->slug($variantSelector);
     }
 
+    public function resource(string|MetaValue $resource, ?Selector $variantSelector = null): string
+    {
+        return str_replace('//', '/', $this->url(false, $variantSelector) . '/' . (string)$resource);
+    }
+
     public function children(string|callable $sortBy = 'default', string $order = 'asc'): Items|ArrayIterator
     {
         if ($this->children == null) {
