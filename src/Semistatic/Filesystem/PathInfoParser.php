@@ -22,33 +22,46 @@ class PathInfoParser
     {
     }
 
-    private ?string $regexPrecompiled = null;
+    private string $regexDirectoryPrecompiled = '/^((?<order>\d+)\.)?(?<slug_or_variant_type>.*)/';
+    private ?string $regexFilePrecompiled = null;
+
+    private function fromFile(SplFileInfo $fileInfo): ?VariantFileInfo
+    {
+        if (!$this->regexFilePrecompiled) {
+            $this->regexFilePrecompiled = '/^((?<order>\d+)\.)?(?<slug_or_variant_type>[\-|\w]*)(\.(?<language>(' . implode('|', $this->languages) . ')))?(\.(?<extension>(' . implode('|', $this->extensions) . ')))?$/';
+        }
+
+        if (!preg_match($this->regexFilePrecompiled, $fileInfo->getFilename(), $matches)) {
+            return null;
+        }
+
+        return new VariantFileInfo(
+            absolutePath: $fileInfo->getRealPath(),
+            flavor: $matches['slug_or_variant_type'],
+            extension: $matches['extension'] ?? '',
+            language: !empty($matches['language']) ? $matches['language'] : $this->defaultLanguage,
+        );
+    }
+
+    private function fromDirectory(SplFileInfo $fileInfo): ?ItemDirectoryInfo
+    {
+        if (!preg_match($this->regexDirectoryPrecompiled, $fileInfo->getFilename(), $matches)) {
+            return null;
+        }
+
+        return new ItemDirectoryInfo(
+            absolutePath: $fileInfo->getRealPath(),
+            slug: $matches['slug_or_variant_type'],
+            order: (int)$matches['order']
+        );
+    }
 
     public function fromFilename(SplFileInfo $fileInfo): ItemDirectoryInfo|VariantFileInfo|null
     {
-        if (!$this->regexPrecompiled) {
-            $this->regexPrecompiled = '/^((?<order>\d+)\.)?(?<slug_or_variant_type>[\-|\w]*)(\.(?<language>(' . implode('|', $this->languages) . ')))?(\.(?<extension>(' . implode('|', $this->extensions) . ')))?$/';
+        if ($fileInfo->isDir()) {
+            return $this->fromDirectory($fileInfo);
         }
 
-        if (preg_match($this->regexPrecompiled, $fileInfo->getFilename(), $matches)) {
-            if ($fileInfo->isDir()) {
-                return new ItemDirectoryInfo(
-                    absolutePath: $fileInfo->getRealPath(),
-                    slug: $matches['slug_or_variant_type'],
-                    order: (int)$matches['order']
-                );
-            }
-
-            return new VariantFileInfo(
-                absolutePath: $fileInfo->getRealPath(),
-                flavor: $matches['slug_or_variant_type'],
-                extension: $matches['extension'] ?? '',
-                language: !empty($matches['language']) ? $matches['language'] : $this->defaultLanguage,
-            );
-        }
-
-        return null;
+        return $this->fromFile($fileInfo);
     }
 }
-
-
