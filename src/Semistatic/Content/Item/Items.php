@@ -48,10 +48,13 @@ class Items implements IteratorAggregate
         if (is_string($sorting)) {
             switch ($sorting) {
                 case 'date':
+                    return function ($itemLeft, $itemRight) {
+                        return ((string)$itemLeft->date() ?? 0) >= (string)($itemRight->date() ?? 0);
+                    };
                 case 'order':
                 default:
-                    return function ($a, $b) {
-                        return ($a->info->order ?? 0) >= ($b->info->order ?? 0);
+                    return function ($itemLeft, $itemRight) {
+                        return ($itemLeft->info->order ?? 0) >= ($itemRight->info->order ?? 0);
                     };
             }
         }
