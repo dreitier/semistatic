@@ -10,7 +10,6 @@ class SendFileResponse implements Responsable
 {
     public function __construct(public readonly Item $item, public readonly string $fileInItem)
     {
-
     }
 
     public static function mayProcess(Item $item, string $fileInItem): ?SendFileResponse

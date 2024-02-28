@@ -66,7 +66,7 @@ class SemistaticRouter implements SemistaticRouterInterface
             }
 
             // some attachment inside a node/directory
-            if (!$trail->isLast()) {
+            if (!$trail->isLast() && $trail->current()) {
                 if ($sendFile = SendFileResponse::mayProcess($trail->current(), $itemLookupResponse->uriSegmentsLeft->joinCurrentToEnd('/'))) {
                     return $sendFile;
                 }
