@@ -22,7 +22,7 @@
     "ext-fileinfo": "*",
  	"nesbot/carbon": ">=2.50.0",
     "league/commonmark": "^2.4",
-    "laravel/framework": "^10.10|^11.0|^12.0",
+    "laravel/framework": "^12.69",
     "symfony/yaml": "^6.3|^7.0"
   },
   "autoload": {
@@ -43,6 +43,8 @@
   "config": {
     "allow-plugins": {
       "pestphp/pest-plugin": true
+    },
+    "platform": {
     }
   }
 }
